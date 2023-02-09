@@ -108,13 +108,15 @@ class FRUIT:
     def __init__(self):
         self.randomize()
         
+    # draw the fruit at random position
     def draw_fruit(self):
         fruit_rectangle = pygame.Rect(int(self.pos.x * cell_size), int(self.pos.y * cell_size),cell_size,cell_size)
         screen.blit(apple,fruit_rectangle)
         
+    # get random position
     def randomize(self):
-        self.x = random.randint(0,cell_number - 1)
-        self.y = random.randint(0,cell_number - 1)
+        self.x = random.randint(0,cell_numberX - 1)
+        self.y = random.randint(0,cell_numberY - 1)
         self.pos = Vector2(self.x,self.y)
 
 class MAIN:
@@ -122,17 +124,20 @@ class MAIN:
         self.snake = SNAKE()
         self.fruit = FRUIT()
     
+    # moves the snake at every second and check if there's
+    # collision bw fruit and the snake, and check for game over.
     def update(self):
         self.snake.move_snake()
         self.check_collision()
         self.check_fail()
         
+    # Draws element at the first frame before the game starts
     def draw_elements(self):
-        self.draw_grass()
         self.fruit.draw_fruit()
         self.snake.draw_snake()
         self.draw_score()
     
+    # check if snake body collides with fruit position
     def check_collision(self):
         if self.fruit.pos == self.snake.body[0]:
             self.fruit.randomize()
@@ -143,71 +148,88 @@ class MAIN:
             if block == self.fruit.pos:
                 self.fruit.randomize()
     
+    # check for game over if the snake gets out of boundary
     def check_fail(self):
-        if not 0 <= self.snake.body[0].x < cell_number or not 0 <= self.snake.body[0].y < cell_number:
+        print("snakebody:{}".format(self.snake.body[0]))
+        if not 0 <= self.snake.body[0].x < cell_numberX or not 0 <= self.snake.body[0].y < cell_numberY:
             self.game_over()
         
         for block in self.snake.body[1:]:
             if block == self.snake.body[0]:
                 self.game_over()
 
-    def draw_grass(self):
-        grass_color = (167,209,61)
-
     def draw_score(self):
-        score_text = str(len(self.snake.body) -3)
+        score_text = str(len(self.snake.body) -3) + ' (HS:{})'.format(highest_score)
         score_surface = g_font.render(score_text, True, (56,74,12))
-        score_x = int(cell_size * cell_number - 60)
-        score_y = int(cell_size * cell_number - 40)
+        score_x = int(cell_size*cell_numberX - 70)
+        score_y = int(1*cell_size)
         score_rectangle = score_surface.get_rect(center = (score_x, score_y))
         apple_rectangle = apple.get_rect(midright = (score_rectangle.left, score_rectangle.centery))
         bg_rectangle = pygame.Rect(apple_rectangle.left, apple_rectangle.top, apple_rectangle.width + score_rectangle.width + 5, apple_rectangle.height)
 
-        pygame.draw.rect(screen,(167,209,61), bg_rectangle)
+        pygame.draw.rect(screen,(168,189,191), bg_rectangle)
         screen.blit(score_surface, score_rectangle)
         screen.blit(apple, apple_rectangle)
         pygame.draw.rect(screen,(56,74,12), bg_rectangle,2)
 
+    # if game over, reset the snake and check high score
     def game_over(self):
+        global highest_score
+        score = len(self.snake.body) - 3
+        if highest_score < score:
+            highest_score = score
         self.snake.reset()
 
-pygame.mixer.pre_init(44100,-16,2,512)     
 pygame.init()
 cell_size = 40
-cell_number = 15
-screen = pygame.display.set_mode((cell_number * cell_size, cell_number * cell_size), pygame.RESIZABLE)
-clock = pygame.time.Clock()
-pygame.display.set_caption("Snake Game")
+cell_numberX = 30
+cell_numberY = 15
+screen = pygame.display.set_mode((1200,600)) # resolution
+clock = pygame.time.Clock() # will be used later to update the frame at interval
+pygame.display.set_caption("SNAKE GAME")
 apple = pygame.image.load('imgs/apple.png').convert_alpha()
 g_font = pygame.font.Font(None, 25)
+pygame.mixer.pre_init(44100,-16,2,512) # frequency and channels etc for music
+highest_score = 0
 
 screen_update = pygame.USEREVENT
-pygame.time.set_timer(screen_update, 150)
+pygame.time.set_timer(screen_update, 150) # check for events every 150ms.
 
 main_game = MAIN()
 
 while True:
     for event in pygame.event.get():
+        
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+        
+        # frame update, at interval
         if event.type == screen_update:
             main_game.update()
+        
         if event.type == KEYDOWN:
+            # if snake is not going down and the user presses up, then move up
             if event.key == pygame.K_UP:
                 if main_game.snake.direction.y != 1:
                     main_game.snake.direction = Vector2(0,-1)
+            
+            # if snake is not going left and the user presses right, then move right
             if event.key == pygame.K_RIGHT:
                 if main_game.snake.direction.x != -1:
                     main_game.snake.direction = Vector2(1,0)
+            
+            # if snake is not going up and the user presses down, then move down
             if event.key == pygame.K_DOWN:
                 if main_game.snake.direction.y != -1:
                     main_game.snake.direction = Vector2(0,1)                
+            
+            # if snake is not going right and the user presses left, then move left
             if event.key == pygame.K_LEFT:
                 if main_game.snake.direction.x != 1:
                     main_game.snake.direction = Vector2(-1,0)                            
 
-    screen.fill((175,215,70))
+    screen.fill((0,0,0))
     main_game.draw_elements()
     pygame.display.update()
     clock.tick(60)
